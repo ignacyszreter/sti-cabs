@@ -4,6 +4,7 @@ using LegacyFighter.Cabs.DriverPayments;
 using LegacyFighter.Cabs.DriverSettlements;
 using LegacyFighter.Cabs.Repository;
 using LegacyFighter.Cabs.Service;
+using Microsoft.FeatureManagement;
 using NodaTime;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,8 +53,13 @@ builder.Services.AddTransient<IClientService>(
   ctx => new TransactionalClientService(
     ctx.GetRequiredService<ClientService>(), 
     ctx.GetRequiredService<ITransactions>()));
-builder.Services.AddTransient<IDriverPaymentsCalculator, StoredProcedureDriverPaymentsCalculator>();
+builder.Services.AddTransient<StoredProcedureDriverPaymentsCalculator>();
 builder.Services.AddTransient<CodeDriverPaymentsCalculator>();
+builder.Services.AddTransient<IDriverPaymentsCalculator>(ctx =>
+  new DriverPaymentsCalculatorRouter(
+    ctx.GetRequiredService<StoredProcedureDriverPaymentsCalculator>(),
+    ctx.GetRequiredService<CodeDriverPaymentsCalculator>(),
+    ctx.GetRequiredService<IFeatureManager>()));
 builder.Services.AddTransient<DriverService>();
 builder.Services.AddTransient<IDriverService>(ctx =>
   new TransactionalDriverService(
@@ -104,6 +110,7 @@ builder.Services.AddHttpClient("PublicHolidays", client =>
 builder.Services.AddTransient<IExchangeRates, NbpExchangeRates>();
 builder.Services.AddTransient<IPublicHolidays, NagerPublicHolidays>();
 builder.Services.AddTransient<IDriverSettlement, DriverSettlementService>();
+builder.Services.AddFeatureManagement();
 builder.Services.AddControllers().AddControllersAsServices();
 
 var app = builder.Build();
