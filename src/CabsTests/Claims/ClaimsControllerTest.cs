@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using LegacyFighter.Cabs.Claims.Sync;
 using LegacyFighter.Cabs.DistanceValue;
 using LegacyFighter.Cabs.Entity;
 using LegacyFighter.Cabs.MoneyValue;
@@ -120,11 +121,14 @@ public class ClaimsControllerTest
     return (await response.Content.ReadFromJsonAsync<RegisteredClaim>())!;
   }
 
+  // The fixtures write straight to the old tables, so they announce the facts the services would announce.
   private async Task<long> AClient()
   {
     using var scope = _app.Services.CreateScope();
     var client = await scope.ServiceProvider.GetRequiredService<IClientRepository>()
       .Save(new Client { Type = Client.Types.Normal });
+    await scope.ServiceProvider.GetRequiredService<IClaimsEvents>()
+      .Publish(new ClientTypeChanged(client.Id!.Value, false));
     return client.Id!.Value;
   }
 
@@ -146,7 +150,10 @@ public class ClaimsControllerTest
     transit.ProposeTo(driver);
     transit.AcceptBy(driver, When);
     transit.Price = new Money(5100);
-    return (await transits.Save(transit)).Id!.Value;
+    var transitId = (await transits.Save(transit)).Id!.Value;
+    await scope.ServiceProvider.GetRequiredService<IClaimsEvents>()
+      .Publish(new TransitOrdered(transitId, clientId));
+    return transitId;
   }
 
   private static async Task<HttpResponseMessage> Ok(HttpResponseMessage response)

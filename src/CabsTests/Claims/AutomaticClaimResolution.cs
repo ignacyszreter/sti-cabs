@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using LegacyFighter.Cabs.Claims.Sync;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.DistanceValue;
 using LegacyFighter.Cabs.Entity;
@@ -183,12 +184,15 @@ public class AutomaticClaimResolution
     }
   }
 
+  // The fixtures write straight to the old tables, so they announce the facts the services would announce.
   private async Task<long> AClaimant(Client.Types type)
   {
     using var scope = _app.Services.CreateScope();
     var client = await scope.ServiceProvider.GetRequiredService<IClientRepository>()
       .Save(new Client { Type = type });
     var clientId = client.Id!.Value;
+    await scope.ServiceProvider.GetRequiredService<IClaimsEvents>()
+      .Publish(new ClientTypeChanged(clientId, type == Client.Types.Vip));
     await Ok(await _http.PostAsync($"/clients/{clientId}/awards", null));
     await Ok(await _http.PostAsync($"/clients/{clientId}/awards/activate", null));
     return clientId;
@@ -212,7 +216,11 @@ public class AutomaticClaimResolution
     transit.ProposeTo(driver);
     transit.AcceptBy(driver, When);
     transit.Price = new Money(price);
-    return (await transits.Save(transit)).Id!.Value;
+    var transitId = (await transits.Save(transit)).Id!.Value;
+    var events = scope.ServiceProvider.GetRequiredService<IClaimsEvents>();
+    await events.Publish(new TransitOrdered(transitId, clientId));
+    await events.Publish(new TransitCompleted(transitId, clientId, _driverId, price));
+    return transitId;
   }
 
   private async Task<ClaimView> SendClaim(long clientId, long transitId)
