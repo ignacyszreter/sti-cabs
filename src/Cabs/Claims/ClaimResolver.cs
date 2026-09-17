@@ -33,6 +33,41 @@ public static class ClaimResolver
 {
   public static Resolution Resolve(ClaimToResolve claim, ClaimPolicy policy)
   {
-    throw new NotImplementedException();
+    if (claim.ClaimsOnThisTransit > 1)
+    {
+      return new Resolution(Decision.Escalated, Ask.Nobody, null, 0);
+    }
+
+    if (claim.ClaimsByClaimant <= 3)
+    {
+      return Refund(claim);
+    }
+
+    if (claim.Claimant.IsVip)
+    {
+      return CheapEnough(claim, policy)
+        ? Refund(claim) with { SpecialMiles = 10 }
+        : new Resolution(Decision.Escalated, Ask.DriverForDetails, claim.Transit.DriverId, 0);
+    }
+
+    if (claim.Claimant.OrderedTransits >= policy.TransitsForAutomaticRefund)
+    {
+      return CheapEnough(claim, policy)
+        ? Refund(claim)
+        : new Resolution(Decision.Escalated, Ask.ClientForMoreInformation, claim.Claimant.ClientId, 0);
+    }
+
+    // Legacy asks the driver using the client id. Reproduced on purpose; fix it after the switch.
+    return new Resolution(Decision.Escalated, Ask.DriverForDetails, claim.Claimant.ClientId, 0);
+  }
+
+  private static bool CheapEnough(ClaimToResolve claim, ClaimPolicy policy)
+  {
+    return claim.Transit.Fare < policy.AutomaticRefundThreshold;
+  }
+
+  private static Resolution Refund(ClaimToResolve claim)
+  {
+    return new Resolution(Decision.Refunded, Ask.ClientAboutRefund, claim.Claimant.ClientId, 0);
   }
 }

@@ -48,9 +48,16 @@ public class LegacyCabs
       _properties.NoOfTransitsForClaimAutomaticRefund);
   }
 
-  public Task<ClaimToResolve> ClaimToResolve(long claimId)
+  public async Task<ClaimToResolve> ClaimToResolve(long claimId)
   {
-    throw new NotImplementedException();
+    var claim = await Find(claimId);
+    var owner = claim.Owner;
+    return new ClaimToResolve(
+      claim.ClaimNo,
+      new Claimant(owner.Id!.Value, owner.Type == Client.Types.Vip, (await _transits.FindByClient(owner)).Count),
+      new ClaimedTransit(claim.Transit.Id!.Value, claim.Transit.Price?.IntValue, claim.Transit.Driver?.Id),
+      (await _claims.FindByOwner(owner)).Count,
+      (await _claims.FindByOwnerAndTransit(owner, claim.Transit)).Count);
   }
 
   public async Task<ClaimDto> Apply(long claimId, Resolution resolution)
