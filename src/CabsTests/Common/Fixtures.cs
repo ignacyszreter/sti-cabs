@@ -81,14 +81,14 @@ public partial class Fixtures
     return ATransit(driver, price, SystemClock.Instance.InBclSystemDefaultZone().GetCurrentLocalDateTime(), null);
   }
 
-  public async Task<DriverFee> DriverHasFee(Driver driver, DriverFee.FeeTypes feeType, int amount, int min)
+  public async Task<DriverFee> DriverHasFee(Driver driver, DriverFee.FeeTypes feeType, int amount, int? min)
   {
     var driverFee = new DriverFee
     {
       Driver = driver,
       Amount = amount,
       FeeType = feeType,
-      Min = new Money(min)
+      Min = min == null ? null! : new Money(min.Value)
     };
     return await _feeRepository.Save(driverFee);
   }
