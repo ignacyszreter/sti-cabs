@@ -16,6 +16,7 @@ using NUnit.Framework;
 namespace LegacyFighter.CabsTests.Claims;
 
 [TestFixture("/claims")]
+[TestFixture("/bubble/claims")]
 public class AutomaticClaimResolution
 {
   private const int RefundThreshold = 10000;
