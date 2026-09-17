@@ -2,7 +2,6 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using LegacyFighter.Cabs.Claims.Strangler;
 using LegacyFighter.Cabs.Claims.Sync;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.DistanceValue;
@@ -17,10 +16,6 @@ using NUnit.Framework;
 
 namespace LegacyFighter.CabsTests.Claims;
 
-[TestFixture(false, false, false)]
-[TestFixture(true, false, false)]
-[TestFixture(true, true, false)]
-[TestFixture(true, true, true)]
 public class AutomaticClaimResolution
 {
   private const int RefundThreshold = 10000;
@@ -30,22 +25,10 @@ public class AutomaticClaimResolution
 
   private static readonly Instant When = Instant.FromUtc(2019, 1, 7, 12, 0);
 
-  private readonly StranglerFlags _flags;
-
   private CabsApp _app = default!;
   private HttpClient _http = default!;
   private long _driverId;
   private int _addressNumber;
-
-  public AutomaticClaimResolution(bool registrationInModule, bool regularClientsInModule, bool vipClientsInModule)
-  {
-    _flags = new StranglerFlags
-    {
-      RegisterClaims = registrationInModule,
-      ResolveClaimsOfRegularClients = regularClientsInModule,
-      ResolveClaimsOfVipClients = vipClientsInModule
-    };
-  }
 
   [SetUp]
   public async Task Start()
@@ -59,8 +42,6 @@ public class AutomaticClaimResolution
         AutomaticRefundForVipThreshold = RefundThreshold,
         NoOfTransitsForClaimAutomaticRefund = TransitsForAutomaticRefund
       });
-      services.RemoveAll<StranglerFlags>();
-      services.AddSingleton(_flags);
     });
     _http = _app.CreateClient();
     _driverId = (await _app.Fixtures.ADriver()).Id!.Value;

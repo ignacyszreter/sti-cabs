@@ -16,7 +16,7 @@ namespace LegacyFighter.CabsTests.Claims;
 
 public class ClaimsControllerTest
 {
-  private const string Claims = "/bubble/claims";
+  private const string Claims = "/claims";
   private const long Unknown = 999_999;
 
   private static readonly Instant When = Instant.FromUtc(2019, 1, 7, 12, 0);
