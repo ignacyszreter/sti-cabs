@@ -10,7 +10,6 @@ using NodaTime;
 
 namespace LegacyFighter.CabsTests.DriverSettlements;
 
-[Category("SqlServer")]
 public class DriverSettlementServiceTest
 {
   private FakeExchangeRates _exchangeRates = default!;
@@ -22,7 +21,7 @@ public class DriverSettlementServiceTest
   {
     _exchangeRates = new FakeExchangeRates();
     _publicHolidays = new FakePublicHolidays();
-    _app = CabsApp.CreateInstanceOnSqlServer(services =>
+    _app = CabsApp.CreateInstance(services =>
     {
       services.RemoveAll<IExchangeRates>();
       services.AddSingleton<IExchangeRates>(_exchangeRates);

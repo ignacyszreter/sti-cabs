@@ -12,7 +12,6 @@ using static VerifyNUnit.Verifier;
 
 namespace LegacyFighter.CabsTests.Integration;
 
-[Category("SqlServer")]
 public class DriverSettlementIntegrationTestWithStub
 {
   private CabsApp _app = default!;
@@ -20,7 +19,7 @@ public class DriverSettlementIntegrationTestWithStub
   [SetUp]
   public void InitializeApp()
   {
-    _app = CabsApp.CreateInstanceOnSqlServer(services =>
+    _app = CabsApp.CreateInstance(services =>
     {
       services.AddHttpClient("Nbp")
         .ConfigurePrimaryHttpMessageHandler(() => new CannedResponses(NbpRates));

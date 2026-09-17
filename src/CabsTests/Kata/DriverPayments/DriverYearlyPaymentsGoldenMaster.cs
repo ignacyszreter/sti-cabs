@@ -7,7 +7,6 @@ using static VerifyNUnit.Verifier;
 
 namespace LegacyFighter.CabsTests.Kata.DriverPayments;
 
-[Category("SqlServer")]
 public class DriverYearlyPaymentsGoldenMaster
 {
   private sealed record FeePlan(string Label, DriverFee.FeeTypes Type, int Amount, int? Min)
@@ -43,7 +42,7 @@ public class DriverYearlyPaymentsGoldenMaster
   [SetUp]
   public void Setup()
   {
-    _app = CabsApp.CreateInstanceOnSqlServer(_ => { });
+    _app = CabsApp.CreateInstance();
   }
 
   [TearDown]

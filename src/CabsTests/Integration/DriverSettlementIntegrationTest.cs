@@ -6,7 +6,6 @@ using static VerifyNUnit.Verifier;
 
 namespace LegacyFighter.CabsTests.Integration;
 
-[Category("SqlServer")]
 public class DriverSettlementIntegrationTest
 {
   private CabsApp _app = default!;
@@ -14,7 +13,7 @@ public class DriverSettlementIntegrationTest
   [SetUp]
   public void InitializeApp()
   {
-    _app = CabsApp.CreateInstanceOnSqlServer(_ => { });
+    _app = CabsApp.CreateInstance();
   }
 
   [TearDown]
