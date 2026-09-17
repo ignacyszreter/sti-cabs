@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using LegacyFighter.Cabs.Claims.Strangler;
 using LegacyFighter.Cabs.Claims.Sync;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.DistanceValue;
@@ -16,8 +17,10 @@ using NUnit.Framework;
 
 namespace LegacyFighter.CabsTests.Claims;
 
-[TestFixture("/claims")]
-[TestFixture("/bubble/claims")]
+[TestFixture(false, false, false)]
+[TestFixture(true, false, false)]
+[TestFixture(true, true, false)]
+[TestFixture(true, true, true)]
 public class AutomaticClaimResolution
 {
   private const int RefundThreshold = 10000;
@@ -27,16 +30,21 @@ public class AutomaticClaimResolution
 
   private static readonly Instant When = Instant.FromUtc(2019, 1, 7, 12, 0);
 
-  private readonly string _claims;
+  private readonly StranglerFlags _flags;
 
   private CabsApp _app = default!;
   private HttpClient _http = default!;
   private long _driverId;
   private int _addressNumber;
 
-  public AutomaticClaimResolution(string claims)
+  public AutomaticClaimResolution(bool registrationInModule, bool regularClientsInModule, bool vipClientsInModule)
   {
-    _claims = claims;
+    _flags = new StranglerFlags
+    {
+      RegisterClaims = registrationInModule,
+      ResolveClaimsOfRegularClients = regularClientsInModule,
+      ResolveClaimsOfVipClients = vipClientsInModule
+    };
   }
 
   [SetUp]
@@ -51,6 +59,8 @@ public class AutomaticClaimResolution
         AutomaticRefundForVipThreshold = RefundThreshold,
         NoOfTransitsForClaimAutomaticRefund = TransitsForAutomaticRefund
       });
+      services.RemoveAll<StranglerFlags>();
+      services.AddSingleton(_flags);
     });
     _http = _app.CreateClient();
     _driverId = (await _app.Fixtures.ADriver()).Id!.Value;
@@ -163,7 +173,7 @@ public class AutomaticClaimResolution
   private async Task<Outcome> ResolveNewClaim(long claimantId, long transitId)
   {
     var claim = await SendClaim(claimantId, transitId);
-    var response = await Ok(await _http.PostAsync($"{_claims}/{claim.ClaimId}", null));
+    var response = await Ok(await _http.PostAsync($"/claims/{claim.ClaimId}", null));
     var resolved = (await response.Content.ReadFromJsonAsync<ClaimView>())!;
     return new Outcome(resolved.Status, resolved.CompletionMode, await AwardsBalance(claimantId));
   }
@@ -226,7 +236,7 @@ public class AutomaticClaimResolution
   private async Task<ClaimView> SendClaim(long clientId, long transitId)
   {
     var response = await Ok(await _http.PostAsJsonAsync(
-      $"{_claims}/send",
+      "/claims/send",
       new { clientId, transitId, reason = "za drogo", incidentDescription = "za drogo" }));
     return (await response.Content.ReadFromJsonAsync<ClaimView>())!;
   }
