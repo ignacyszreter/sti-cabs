@@ -101,6 +101,7 @@ builder.Services.AddTransient<ClaimsFacade>();
 builder.Services.AddMediator(options => options.ServiceLifetime = ServiceLifetime.Scoped);
 builder.Services.AddTransient<IClaimsEvents, MediatorClaimsEvents>();
 builder.Services.AddTransient<ClaimsBackfill>();
+builder.Services.AddTransient<ClaimsMigration>();
 builder.Services.AddControllers().AddControllersAsServices();
 
 var app = builder.Build();
@@ -112,6 +113,7 @@ using (var serviceScope = app.Services.CreateScope())
   var claims = serviceScope.ServiceProvider.GetRequiredService<ClaimsDbContext>();
   await claims.Database.EnsureCreatedAsync();
   await serviceScope.ServiceProvider.GetRequiredService<ClaimsBackfill>().Run();
+  await serviceScope.ServiceProvider.GetRequiredService<ClaimsMigration>().Run();
 }
 
 // Configure the HTTP request pipeline.

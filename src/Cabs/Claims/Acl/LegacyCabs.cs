@@ -84,7 +84,12 @@ public class LegacyCabs
     claim.Status = Claim.Statuses.InProcess;
   }
 
-  public async Task<ClaimRecord> View(long claimId)
+  public async Task<List<long>> AllClaimIds()
+  {
+    return await _context.Claims.Select(claim => claim.Id!.Value).ToListAsync();
+  }
+
+  public async Task<ClaimRecord> ReadClaim(long claimId)
   {
     return RecordOf(await Find(claimId));
   }

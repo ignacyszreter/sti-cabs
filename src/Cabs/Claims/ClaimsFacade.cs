@@ -54,7 +54,7 @@ public class ClaimsFacade
 
   public async Task<ClaimView> View(long claimId)
   {
-    return ClaimView.Of(await _legacy.View(claimId));
+    return ClaimView.Of(await Claim(claimId));
   }
 
   private async Task<ClaimToResolve> ToResolve(ClaimRecord claim)
