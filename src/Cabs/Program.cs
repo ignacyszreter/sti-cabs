@@ -56,10 +56,16 @@ builder.Services.AddTransient<IClientService>(
 builder.Services.AddTransient<StoredProcedureDriverPaymentsCalculator>();
 builder.Services.AddTransient<CodeDriverPaymentsCalculator>();
 builder.Services.AddTransient<IDriverPaymentsCalculator>(ctx =>
-  new DriverPaymentsCalculatorRouter(
-    ctx.GetRequiredService<StoredProcedureDriverPaymentsCalculator>(),
-    ctx.GetRequiredService<CodeDriverPaymentsCalculator>(),
-    ctx.GetRequiredService<IFeatureManager>()));
+{
+  var storedProcedure = ctx.GetRequiredService<StoredProcedureDriverPaymentsCalculator>();
+  var code = ctx.GetRequiredService<CodeDriverPaymentsCalculator>();
+  var featureManager = ctx.GetRequiredService<IFeatureManager>();
+  var logger = ctx.GetRequiredService<ILogger<ReconciledDriverPaymentsCalculator>>();
+  return new DriverPaymentsCalculatorRouter(
+    new ReconciledDriverPaymentsCalculator(storedProcedure, code, featureManager, logger),
+    new ReconciledDriverPaymentsCalculator(code, storedProcedure, featureManager, logger),
+    featureManager);
+});
 builder.Services.AddTransient<DriverService>();
 builder.Services.AddTransient<IDriverService>(ctx =>
   new TransactionalDriverService(
