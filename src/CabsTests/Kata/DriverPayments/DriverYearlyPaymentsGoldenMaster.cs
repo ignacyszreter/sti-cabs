@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using LegacyFighter.Cabs.DriverPayments;
 using LegacyFighter.Cabs.Entity;
+using LegacyFighter.Cabs.MoneyValue;
 using LegacyFighter.Cabs.Service;
 using LegacyFighter.CabsTests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,17 +61,39 @@ public class DriverYearlyPaymentsGoldenMaster
   [Test]
   public Task YearlyPayments()
   {
-    return Combination().Verify(PaymentsIn2000, FeePlans);
+    return Combination().Verify(plan => PaymentsIn2000(plan, ThroughStoredProcedure), FeePlans);
   }
 
-  private async Task<string> PaymentsIn2000(FeePlan plan)
+  [Test]
+  public Task YearlyPaymentsCalculatedInCode()
+  {
+    return Combination()
+      .Verify(plan => PaymentsIn2000(plan, ThroughCodeCalculator), FeePlans)
+      .UseMethodName(nameof(YearlyPayments))
+      .DisableRequireUniquePrefix();
+  }
+
+  private async Task<string> PaymentsIn2000(
+    FeePlan plan,
+    Func<long, int, Task<Dictionary<Month, Money>>> yearlyPayments)
   {
     var driverId = await ADriverWithTransits(plan);
-    using var scope = _app.Services.CreateScope();
-    var payments = await scope.ServiceProvider
-      .GetRequiredService<StoredProcedureDriverPaymentsCalculator>()
-      .YearlyPayments(driverId, 2000);
+    var payments = await yearlyPayments(driverId, 2000);
     return string.Join(" | ", Month.Values().Select(m => $"{m.Value,2}: {payments[m].IntValue,5}"));
+  }
+
+  private async Task<Dictionary<Month, Money>> ThroughStoredProcedure(long driverId, int year)
+  {
+    using var scope = _app.Services.CreateScope();
+    return await scope.ServiceProvider.GetRequiredService<StoredProcedureDriverPaymentsCalculator>()
+      .YearlyPayments(driverId, year);
+  }
+
+  private async Task<Dictionary<Month, Money>> ThroughCodeCalculator(long driverId, int year)
+  {
+    using var scope = _app.Services.CreateScope();
+    return await scope.ServiceProvider.GetRequiredService<CodeDriverPaymentsCalculator>()
+      .YearlyPayments(driverId, year);
   }
 
   private async Task<long> ADriverWithTransits(FeePlan plan)
