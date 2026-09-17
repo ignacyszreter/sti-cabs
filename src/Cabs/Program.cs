@@ -53,6 +53,7 @@ builder.Services.AddTransient<IClientService>(
     ctx.GetRequiredService<ClientService>(), 
     ctx.GetRequiredService<ITransactions>()));
 builder.Services.AddTransient<IDriverPaymentsCalculator, StoredProcedureDriverPaymentsCalculator>();
+builder.Services.AddTransient<CodeDriverPaymentsCalculator>();
 builder.Services.AddTransient<DriverService>();
 builder.Services.AddTransient<IDriverService>(ctx =>
   new TransactionalDriverService(
