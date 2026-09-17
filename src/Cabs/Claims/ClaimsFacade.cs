@@ -1,6 +1,7 @@
 using LegacyFighter.Cabs.Claims.Acl;
 using LegacyFighter.Cabs.Claims.Storage;
 using LegacyFighter.Cabs.Config;
+using Microsoft.EntityFrameworkCore;
 using NodaTime;
 
 namespace LegacyFighter.Cabs.Claims;
@@ -32,8 +33,7 @@ public class ClaimsFacade
   {
     var now = _clock.GetCurrentInstant();
     var record = await Claim(claimId);
-    var toResolve = await _legacy.ClaimToResolve(claimId);
-    var resolution = ClaimResolver.Resolve(toResolve, Policy());
+    var resolution = ClaimResolver.Resolve(await ToResolve(record), Policy());
     await _legacy.Apply(claimId, record.ClaimNo, record.ClaimantId, resolution, now);
     var refunded = resolution.Decision == Decision.Refunded;
     record.Status = refunded ? ClaimStatus.Refunded : ClaimStatus.Escalated;
@@ -55,6 +55,20 @@ public class ClaimsFacade
   public async Task<ClaimView> View(long claimId)
   {
     return ClaimView.Of(await _legacy.View(claimId));
+  }
+
+  private async Task<ClaimToResolve> ToResolve(ClaimRecord claim)
+  {
+    var claimant = await _claims.Claimants.FindAsync(claim.ClaimantId)
+                   ?? throw new InvalidOperationException("Claimant does not exists");
+    var transit = await _claims.ClaimedTransits.FindAsync(claim.TransitId)
+                  ?? throw new InvalidOperationException("Claimed transit does not exists");
+    return new ClaimToResolve(
+      claim.ClaimNo,
+      new Claimant(claimant.ClientId, claimant.IsVip, claimant.OrderedTransits),
+      new ClaimedTransit(transit.TransitId, transit.Fare, transit.DriverId),
+      await _claims.Claims.CountAsync(c => c.ClaimantId == claim.ClaimantId),
+      await _claims.Claims.CountAsync(c => c.ClaimantId == claim.ClaimantId && c.TransitId == claim.TransitId));
   }
 
   private ClaimPolicy Policy()

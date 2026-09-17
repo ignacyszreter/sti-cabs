@@ -11,7 +11,6 @@ public class LegacyCabs
 {
   private readonly SqLiteDbContext _context;
   private readonly IClaimRepository _claims;
-  private readonly ITransitRepository _transits;
   private readonly ClaimNumberGenerator _claimNumbers;
   private readonly IAwardsService _awards;
   private readonly IClientNotificationService _clientNotifications;
@@ -20,7 +19,6 @@ public class LegacyCabs
   public LegacyCabs(
     SqLiteDbContext context,
     IClaimRepository claims,
-    ITransitRepository transits,
     ClaimNumberGenerator claimNumbers,
     IAwardsService awards,
     IClientNotificationService clientNotifications,
@@ -28,23 +26,10 @@ public class LegacyCabs
   {
     _context = context;
     _claims = claims;
-    _transits = transits;
     _claimNumbers = claimNumbers;
     _awards = awards;
     _clientNotifications = clientNotifications;
     _driverNotifications = driverNotifications;
-  }
-
-  public async Task<ClaimToResolve> ClaimToResolve(long claimId)
-  {
-    var claim = await Find(claimId);
-    var owner = claim.Owner;
-    return new ClaimToResolve(
-      claim.ClaimNo,
-      new Claimant(owner.Id!.Value, owner.Type == Client.Types.Vip, (await _transits.FindByClient(owner)).Count),
-      new ClaimedTransit(claim.Transit.Id!.Value, claim.Transit.Price?.IntValue, claim.Transit.Driver?.Id),
-      (await _claims.FindByOwner(owner)).Count,
-      (await _claims.FindByOwnerAndTransit(owner, claim.Transit)).Count);
   }
 
   public async Task<ClaimRecord> Register(NewClaim newClaim, Instant createdAt)
