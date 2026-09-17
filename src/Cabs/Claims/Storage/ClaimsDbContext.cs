@@ -33,7 +33,6 @@ public class ClaimsDbContext : DbContext
     {
       builder.ToTable("Claims");
       builder.HasKey(c => c.ClaimId);
-      builder.Property(c => c.ClaimId).ValueGeneratedNever();
       builder.Property(c => c.Status).HasConversion<string>().IsRequired();
       builder.Property(c => c.CompletionMode).HasConversion<string>();
       builder.Property(c => c.CreatedAt).HasConversion(instantConverter).IsRequired();

@@ -10,35 +10,55 @@ public class ClaimsFacade
 {
   private readonly LegacyCabs _legacy;
   private readonly ClaimsDbContext _claims;
+  private readonly ClaimNumbers _numbers;
   private readonly IAppProperties _properties;
   private readonly IClock _clock;
 
-  public ClaimsFacade(LegacyCabs legacy, ClaimsDbContext claims, IAppProperties properties, IClock clock)
+  public ClaimsFacade(
+    LegacyCabs legacy,
+    ClaimsDbContext claims,
+    ClaimNumbers numbers,
+    IAppProperties properties,
+    IClock clock)
   {
     _legacy = legacy;
     _claims = claims;
+    _numbers = numbers;
     _properties = properties;
     _clock = clock;
   }
 
   public async Task<ClaimView> Register(NewClaim newClaim)
   {
-    var registered = await _legacy.Register(newClaim, _clock.GetCurrentInstant());
-    _claims.Claims.Add(registered);
+    _ = await _claims.Claimants.FindAsync(newClaim.ClientId)
+        ?? throw new InvalidOperationException("Client does not exists");
+    _ = await _claims.ClaimedTransits.FindAsync(newClaim.TransitId)
+        ?? throw new InvalidOperationException("Transit does not exists");
+    var now = _clock.GetCurrentInstant();
+    var record = new ClaimRecord
+    {
+      ClaimNo = await _numbers.Next(now),
+      ClaimantId = newClaim.ClientId,
+      TransitId = newClaim.TransitId,
+      Status = newClaim.IsDraft ? ClaimStatus.Draft : ClaimStatus.New,
+      CreatedAt = now,
+      Reason = newClaim.Reason,
+      IncidentDescription = newClaim.IncidentDescription
+    };
+    _claims.Claims.Add(record);
     await _claims.SaveChangesAsync();
-    return ClaimView.Of(registered);
+    return ClaimView.Of(record);
   }
 
   public async Task<ClaimView> Resolve(long claimId)
   {
-    var now = _clock.GetCurrentInstant();
     var record = await Claim(claimId);
     var resolution = ClaimResolver.Resolve(await ToResolve(record), Policy());
-    await _legacy.Apply(claimId, record.ClaimNo, record.ClaimantId, resolution, now);
+    await _legacy.Apply(record.ClaimNo, record.ClaimantId, resolution);
     var refunded = resolution.Decision == Decision.Refunded;
     record.Status = refunded ? ClaimStatus.Refunded : ClaimStatus.Escalated;
     record.CompletionMode = refunded ? ClaimCompletionMode.Automatic : ClaimCompletionMode.Manual;
-    record.CompletedAt = now;
+    record.CompletedAt = _clock.GetCurrentInstant();
     await _claims.SaveChangesAsync();
     return ClaimView.Of(record);
   }
@@ -46,7 +66,6 @@ public class ClaimsFacade
   public async Task<ClaimView> MarkInProcess(long claimId)
   {
     var record = await Claim(claimId);
-    await _legacy.MarkInProcess(claimId);
     record.Status = ClaimStatus.InProcess;
     await _claims.SaveChangesAsync();
     return ClaimView.Of(record);
@@ -55,6 +74,12 @@ public class ClaimsFacade
   public async Task<ClaimView> View(long claimId)
   {
     return ClaimView.Of(await Claim(claimId));
+  }
+
+  public async Task<ClaimView?> ClaimOf(long transitId)
+  {
+    var record = await _claims.Claims.FirstOrDefaultAsync(claim => claim.TransitId == transitId);
+    return record == null ? null : ClaimView.Of(record);
   }
 
   private async Task<ClaimToResolve> ToResolve(ClaimRecord claim)
