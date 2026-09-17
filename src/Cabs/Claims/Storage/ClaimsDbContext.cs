@@ -37,6 +37,7 @@ public class ClaimsDbContext : DbContext
       builder.Property(c => c.Status).HasConversion<string>().IsRequired();
       builder.Property(c => c.CompletionMode).HasConversion<string>();
       builder.Property(c => c.CreatedAt).HasConversion(instantConverter).IsRequired();
+      builder.Property(c => c.CompletedAt).HasConversion(instantConverter);
     });
     modelBuilder.Entity<ClaimantRecord>(builder =>
     {

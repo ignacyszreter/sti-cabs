@@ -16,19 +16,19 @@ public class ClaimsController
   }
 
   [HttpPost("/bubble/claims/createDraft")]
-  public async Task<object> CreateDraft([FromBody] NewClaim claim)
+  public async Task<ClaimView> CreateDraft([FromBody] NewClaim claim)
   {
     return await Register(claim with { IsDraft = true });
   }
 
   [HttpPost("/bubble/claims/send")]
-  public async Task<object> Send([FromBody] NewClaim claim)
+  public async Task<ClaimView> Send([FromBody] NewClaim claim)
   {
     return await Register(claim with { IsDraft = false });
   }
 
   [HttpPost("/bubble/claims/{id}/markInProcess")]
-  public async Task<object> MarkInProcess(long id)
+  public async Task<ClaimView> MarkInProcess(long id)
   {
     await using var tx = await _transactions.BeginTransaction();
     var claim = await _claims.MarkInProcess(id);
@@ -37,7 +37,7 @@ public class ClaimsController
   }
 
   [HttpGet("/bubble/claims/{id}")]
-  public async Task<object> Find(long id)
+  public async Task<ClaimView> Find(long id)
   {
     await using var tx = await _transactions.BeginTransaction();
     var claim = await _claims.View(id);
@@ -46,7 +46,7 @@ public class ClaimsController
   }
 
   [HttpPost("/bubble/claims/{id}")]
-  public async Task<object> Resolve(long id)
+  public async Task<ClaimView> Resolve(long id)
   {
     await using var tx = await _transactions.BeginTransaction();
     var claim = await _claims.Resolve(id);
@@ -54,7 +54,7 @@ public class ClaimsController
     return claim;
   }
 
-  private async Task<object> Register(NewClaim claim)
+  private async Task<ClaimView> Register(NewClaim claim)
   {
     await using var tx = await _transactions.BeginTransaction();
     var registered = await _claims.Register(claim);

@@ -1,3 +1,4 @@
+using LegacyFighter.Cabs.Claims.Sync;
 using LegacyFighter.Cabs.DistanceValue;
 using LegacyFighter.Cabs.Dto;
 using LegacyFighter.Cabs.Entity;
@@ -23,6 +24,7 @@ public class TransitService : ITransitService
   private readonly IDriverFeeService _driverFeeService;
   private readonly IClock _clock;
   private readonly IAwardsService _awardsService;
+  private readonly IClaimsEvents _events;
 
   public TransitService(
     IDriverRepository driverRepository,
@@ -38,7 +40,8 @@ public class TransitService : ITransitService
     AddressRepository addressRepository,
     IDriverFeeService driverFeeService,
     IClock clock,
-    IAwardsService awardsService)
+    IAwardsService awardsService,
+    IClaimsEvents events)
   {
     _driverRepository = driverRepository;
     _transitRepository = transitRepository;
@@ -54,6 +57,7 @@ public class TransitService : ITransitService
     _driverFeeService = driverFeeService;
     _clock = clock;
     _awardsService = awardsService;
+    _events = events;
   }
 
   public async Task<Transit> CreateTransit(TransitDto transitDto)
@@ -84,7 +88,9 @@ public class TransitService : ITransitService
     var km = Distance.OfKm((float) _distanceCalculator.CalculateByMap(geoFrom[0], geoFrom[1], geoTo[0], geoTo[1]));
     var transit = new Transit(from, to, client, carClass, _clock.GetCurrentInstant(), km);
     transit.EstimateCost();
-    return await _transitRepository.Save(transit);
+    var ordered = await _transitRepository.Save(transit);
+    await _events.Publish(new TransitOrdered(ordered.Id!.Value, client.Id!.Value));
+    return ordered;
   }
 
   public async Task ChangeTransitAddressFrom(long? transitId, Address newAddress)
@@ -456,6 +462,8 @@ public class TransitService : ITransitService
     await _driverRepository.Save(driver);
     await _awardsService.RegisterMiles(transit.Client.Id, transitId);
     await _transitRepository.Save(transit);
+    await _events.Publish(new TransitCompleted(
+      transitId!.Value, transit.Client.Id!.Value, driverId!.Value, transit.Price.IntValue));
     await _invoiceGenerator.Generate(transit.Price.IntValue, transit.Client.Name + " " + transit.Client.LastName);
   }
 

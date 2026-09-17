@@ -11,6 +11,9 @@ public class ClaimRecord
   public ClaimStatus Status { get; set; }
   public ClaimCompletionMode? CompletionMode { get; set; }
   public Instant CreatedAt { get; set; }
+  public Instant? CompletedAt { get; set; }
+  public string Reason { get; set; } = "";
+  public string IncidentDescription { get; set; } = "";
 }
 
 public class ClaimantRecord
