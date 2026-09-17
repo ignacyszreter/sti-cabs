@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using LegacyFighter.Cabs.DriverPayments;
 using LegacyFighter.Cabs.Entity;
-using LegacyFighter.Cabs.MoneyValue;
 using LegacyFighter.Cabs.Service;
 using LegacyFighter.CabsTests.Common;
-using Microsoft.Extensions.DependencyInjection;
 using NodaTime;
 using static VerifyNUnit.Verifier;
 
@@ -48,8 +43,7 @@ public class DriverYearlyPaymentsGoldenMaster
   [SetUp]
   public void Setup()
   {
-    _app = CabsApp.CreateInstanceOnSqlServer(services =>
-      services.AddTransient<StoredProcedureDriverPaymentsCalculator>());
+    _app = CabsApp.CreateInstanceOnSqlServer(_ => { });
   }
 
   [TearDown]
@@ -61,39 +55,14 @@ public class DriverYearlyPaymentsGoldenMaster
   [Test]
   public Task YearlyPayments()
   {
-    return Combination().Verify(plan => PaymentsIn2000(plan, ThroughStoredProcedure), FeePlans);
+    return Combination().Verify(PaymentsIn2000, FeePlans);
   }
 
-  [Test]
-  public Task YearlyPaymentsCalculatedInCode()
-  {
-    return Combination()
-      .Verify(plan => PaymentsIn2000(plan, ThroughCodeCalculator), FeePlans)
-      .UseMethodName(nameof(YearlyPayments))
-      .DisableRequireUniquePrefix();
-  }
-
-  private async Task<string> PaymentsIn2000(
-    FeePlan plan,
-    Func<long, int, Task<Dictionary<Month, Money>>> yearlyPayments)
+  private async Task<string> PaymentsIn2000(FeePlan plan)
   {
     var driverId = await ADriverWithTransits(plan);
-    var payments = await yearlyPayments(driverId, 2000);
+    var payments = await _app.DriverService.CalculateDriverYearlyPayment(driverId, 2000);
     return string.Join(" | ", Month.Values().Select(m => $"{m.Value,2}: {payments[m].IntValue,5}"));
-  }
-
-  private async Task<Dictionary<Month, Money>> ThroughStoredProcedure(long driverId, int year)
-  {
-    using var scope = _app.Services.CreateScope();
-    return await scope.ServiceProvider.GetRequiredService<StoredProcedureDriverPaymentsCalculator>()
-      .YearlyPayments(driverId, year);
-  }
-
-  private async Task<Dictionary<Month, Money>> ThroughCodeCalculator(long driverId, int year)
-  {
-    using var scope = _app.Services.CreateScope();
-    return await scope.ServiceProvider.GetRequiredService<CodeDriverPaymentsCalculator>()
-      .YearlyPayments(driverId, year);
   }
 
   private async Task<long> ADriverWithTransits(FeePlan plan)
