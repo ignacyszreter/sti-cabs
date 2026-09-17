@@ -1,4 +1,5 @@
 using System.Globalization;
+using LegacyFighter.Cabs.Claims;
 using LegacyFighter.Cabs.DistanceValue;
 using LegacyFighter.Cabs.Entity;
 using NodaTime;
@@ -81,7 +82,7 @@ public class TransitDto
   }
 
   public List<DriverDto> ProposedDrivers { get; set; } = new();
-  public ClaimDto ClaimDto { get; set; }
+  public ClaimView ClaimDto { get; set; }
   public AddressDto To { get; set; }
   public AddressDto From { get; set; }
   public CarType.CarClasses? CarClass { get; set; }

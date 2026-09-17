@@ -23,7 +23,6 @@ builder.Services.AddTransient<IDriverSessionRepository, EfCoreDriverSessionRepos
 builder.Services.AddTransient<IDriverPositionRepository, EfCoreDriverPositionRepository>();
 builder.Services.AddTransient<IClientRepository, EfCoreClientRepository>();
 builder.Services.AddTransient<ITransitRepository, EfCoreTransitRepository>();
-builder.Services.AddTransient<IClaimRepository, EfCoreClaimRepository>();
 builder.Services.AddTransient<IAwardsAccountRepository, EfCoreAwardsAccountRepository>();
 builder.Services.AddTransient<IAwardedMilesRepository, EfCoreAwardedMilesRepository>();
 builder.Services.AddTransient<IInvoiceRepository, EfCoreInvoiceRepository>();
@@ -85,7 +84,6 @@ builder.Services.AddTransient<ITransitAnalyzer>(ctx =>
     ctx.GetRequiredService<ITransactions>()));
 builder.Services.AddTransient<InvoiceGenerator>();
 builder.Services.AddTransient<DistanceCalculator>();
-builder.Services.AddTransient<ClaimNumberGenerator>();
 builder.Services.AddSingleton<IAppProperties, AppProperties>();
 builder.Services.AddSingleton<IClock>(_ => SystemClock.Instance);
 builder.Services.AddTransient<AddressRepository>();
@@ -93,6 +91,7 @@ builder.Services.AddTransient<LegacyCabs>();
 builder.Services.AddSingleton<ClaimsDatabase>();
 builder.Services.AddDbContext<ClaimsDbContext>();
 builder.Services.AddTransient<ClaimNumbers>();
+builder.Services.AddTransient<ClaimsQueries>();
 builder.Services.AddTransient<ClaimsFacade>();
 builder.Services.AddMediator(options => options.ServiceLifetime = ServiceLifetime.Scoped);
 builder.Services.AddTransient<IClaimsEvents, MediatorClaimsEvents>();

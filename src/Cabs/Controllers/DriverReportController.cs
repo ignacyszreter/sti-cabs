@@ -1,3 +1,4 @@
+using LegacyFighter.Cabs.Claims;
 using LegacyFighter.Cabs.Common;
 using LegacyFighter.Cabs.Dto;
 using LegacyFighter.Cabs.Entity;
@@ -14,7 +15,7 @@ public class DriverReportController
 {
   private readonly IDriverService _driverService;
   private readonly IDriverRepository _driverRepository;
-  private readonly IClaimRepository _claimRepository;
+  private readonly ClaimsFacade _claims;
   private readonly IDriverSessionRepository _driverSessionRepository;
   private readonly IClock _clock;
   private readonly ITransactions _transactions;
@@ -22,14 +23,14 @@ public class DriverReportController
   public DriverReportController(
     IDriverService driverService,
     IDriverRepository driverRepository,
-    IClaimRepository claimRepository,
+    ClaimsFacade claims,
     IDriverSessionRepository driverSessionRepository,
     IClock clock,
     ITransactions transactions)
   {
     _driverService = driverService;
     _driverRepository = driverRepository;
-    _claimRepository = claimRepository;
+    _claims = claims;
     _driverSessionRepository = driverSessionRepository;
     _clock = clock;
     _transactions = transactions;
@@ -69,12 +70,7 @@ public class DriverReportController
       foreach (var t in transitsInSession) 
       {
         var transitDto = new TransitDto(t);
-        var byOwnerAndTransit = await _claimRepository.FindByOwnerAndTransit(t.Client, t);
-        if (byOwnerAndTransit.Any())
-        {
-          var claim = new ClaimDto(byOwnerAndTransit[0]);
-          transitDto.ClaimDto = claim;
-        }
+        transitDto.ClaimDto = await _claims.ClaimOf(t.Id!.Value);
 
         transitsDtosInSession.Add(transitDto);
       }

@@ -1,3 +1,4 @@
+using LegacyFighter.Cabs.Claims.Storage;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.Dto;
 using LegacyFighter.Cabs.Entity;
@@ -14,6 +15,7 @@ public class AwardsServiceImpl : IAwardsService
   private readonly ITransitRepository _transitRepository;
   private readonly IClock _clock;
   private readonly IAppProperties _appProperties;
+  private readonly ClaimsQueries _claims;
 
   public AwardsServiceImpl(
     IAwardsAccountRepository accountRepository,
@@ -21,7 +23,8 @@ public class AwardsServiceImpl : IAwardsService
     IClientRepository clientRepository,
     ITransitRepository transitRepository,
     IClock clock,
-    IAppProperties appProperties)
+    IAppProperties appProperties,
+    ClaimsQueries claims)
   {
     _accountRepository = accountRepository;
     _milesRepository = milesRepository;
@@ -29,6 +32,7 @@ public class AwardsServiceImpl : IAwardsService
     _transitRepository = transitRepository;
     _clock = clock;
     _appProperties = appProperties;
+    _claims = claims;
   }
 
   public async Task<AwardsAccountDto> FindBy(long? clientId)
@@ -163,7 +167,7 @@ public class AwardsServiceImpl : IAwardsService
       {
         var milesList = await _milesRepository.FindAllByClient(client);
         var transitsCounter = (await _transitRepository.FindByClient(client)).Count;
-        if (client.Claims.Count >= 3)
+        if (await _claims.ClaimsBy(clientId!.Value) >= 3)
         {
           milesList = milesList.OrderBy(m => m.ExpirationDate.HasValue)
             .ThenByDescending(m => m.ExpirationDate).ToList();

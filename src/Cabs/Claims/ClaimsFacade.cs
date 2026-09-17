@@ -11,6 +11,7 @@ public class ClaimsFacade
   private readonly LegacyCabs _legacy;
   private readonly ClaimsDbContext _claims;
   private readonly ClaimNumbers _numbers;
+  private readonly ClaimsQueries _queries;
   private readonly IAppProperties _properties;
   private readonly IClock _clock;
 
@@ -18,12 +19,14 @@ public class ClaimsFacade
     LegacyCabs legacy,
     ClaimsDbContext claims,
     ClaimNumbers numbers,
+    ClaimsQueries queries,
     IAppProperties properties,
     IClock clock)
   {
     _legacy = legacy;
     _claims = claims;
     _numbers = numbers;
+    _queries = queries;
     _properties = properties;
     _clock = clock;
   }
@@ -78,8 +81,7 @@ public class ClaimsFacade
 
   public async Task<ClaimView?> ClaimOf(long transitId)
   {
-    var record = await _claims.Claims.FirstOrDefaultAsync(claim => claim.TransitId == transitId);
-    return record == null ? null : ClaimView.Of(record);
+    return await _queries.ClaimOf(transitId);
   }
 
   private async Task<ClaimToResolve> ToResolve(ClaimRecord claim)
