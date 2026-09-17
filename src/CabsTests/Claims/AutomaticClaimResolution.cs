@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using LegacyFighter.Cabs.Claims;
 using LegacyFighter.Cabs.Claims.Sync;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.DistanceValue;
@@ -143,13 +144,13 @@ public class AutomaticClaimResolution
     Assert.That(outcome, Is.EqualTo(Escalated));
   }
 
-  private sealed record Outcome(Claim.Statuses? Status, Claim.CompletionModes? CompletionMode, int Miles);
+  private sealed record Outcome(ClaimStatus? Status, ClaimCompletionMode? CompletionMode, int Miles);
 
   private static Outcome Refunded(int miles = 0) =>
-    new(Claim.Statuses.Refunded, Claim.CompletionModes.Automatic, miles);
+    new(ClaimStatus.Refunded, ClaimCompletionMode.Automatic, miles);
 
   private static readonly Outcome Escalated =
-    new(Claim.Statuses.Escalated, Claim.CompletionModes.Manual, 0);
+    new(ClaimStatus.Escalated, ClaimCompletionMode.Manual, 0);
 
   private async Task<Outcome> ResolveNewClaim(long claimantId, long transitId)
   {
@@ -242,7 +243,7 @@ public class AutomaticClaimResolution
   private sealed class ClaimView
   {
     public long ClaimId { get; set; }
-    public Claim.Statuses? Status { get; set; }
-    public Claim.CompletionModes? CompletionMode { get; set; }
+    public ClaimStatus? Status { get; set; }
+    public ClaimCompletionMode? CompletionMode { get; set; }
   }
 }
