@@ -1,3 +1,4 @@
+using LegacyFighter.Cabs.Claims.Acl;
 using LegacyFighter.Cabs.Common;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.Repository;
@@ -90,6 +91,7 @@ builder.Services.AddTransient<ClaimNumberGenerator>();
 builder.Services.AddSingleton<IAppProperties, AppProperties>();
 builder.Services.AddSingleton<IClock>(_ => SystemClock.Instance);
 builder.Services.AddTransient<AddressRepository>();
+builder.Services.AddTransient<LegacyCabs>();
 builder.Services.AddControllers().AddControllersAsServices();
 
 var app = builder.Build();
