@@ -12,7 +12,6 @@ namespace LegacyFighter.Cabs.Repository;
 
 public class SqLiteDbContext : DbContext
 {
-  private readonly DbConnection _connection;
   public DbSet<Address> Addresses { get; set; }
   public DbSet<AwardedMiles> AwardedMiles { get; set; }
   public DbSet<AwardsAccount> AwardsAccounts { get; set; }
@@ -39,14 +38,13 @@ public class SqLiteDbContext : DbContext
     return connection;
   }
 
-  public SqLiteDbContext(DbConnection connection)
+  public SqLiteDbContext(DbContextOptions<SqLiteDbContext> options) : base(options)
   {
-    _connection = connection;
   }
 
   protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
   {
-    optionsBuilder.UseLazyLoadingProxies().UseSqlite(_connection);
+    optionsBuilder.UseLazyLoadingProxies();
     optionsBuilder
       .LogTo(Console.WriteLine)
       .EnableSensitiveDataLogging()
@@ -111,7 +109,6 @@ public class SqLiteDbContext : DbContext
       builder.MapBaseEntityProperties();
       builder.HasOne(a => a.Claim);
       builder.Property(x => x.CreationDate).HasConversion(instantConverter).IsRequired();
-      builder.Property(x => x.Data).HasColumnType("BLOB");
     });
     modelBuilder.Entity<Client>(builder =>
     {
@@ -134,7 +131,6 @@ public class SqLiteDbContext : DbContext
     modelBuilder.Entity<ContractAttachment>(builder =>
     {
       builder.MapBaseEntityProperties();
-      builder.Property(x => x.Data).HasColumnType("BLOB");
       builder.Property(x => x.CreationDate).HasConversion(instantConverter).IsRequired();
       builder.Property(x => x.AcceptedAt).HasConversion(instantConverter);
       builder.Property(x => x.ChangeDate).HasConversion(instantConverter);

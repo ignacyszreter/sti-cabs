@@ -1,8 +1,10 @@
+using System.Data.Common;
 using LegacyFighter.Cabs.Common;
 using LegacyFighter.Cabs.Config;
 using LegacyFighter.Cabs.Repository;
 using LegacyFighter.Cabs.Service;
 using LegacyFighter.Cabs.Tax;
+using Microsoft.EntityFrameworkCore;
 using NodaTime;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddSingleton(_ => SqLiteDbContext.CreateInMemoryDatabase());
-builder.Services.AddDbContext<SqLiteDbContext>();
+builder.Services.AddDbContext<SqLiteDbContext>((services, options) =>
+  options.UseSqlite(services.GetRequiredService<DbConnection>()));
 builder.Services.AddTransient<ITransactions, Transactions>();
 builder.Services.AddTransient<IAddressRepositoryInterface, EfCoreAddressRepository>();
 builder.Services.AddTransient<IDriverRepository, EfCoreDriverRepository>();
